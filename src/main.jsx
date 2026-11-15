@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createClient } from "@supabase/supabase-js";
-import { CalendarDays, Check, Coins, Copy, Crown, Delete, EyeOff, Gift, KeyRound, LockKeyhole, Plus, RotateCcw, Share2, Sparkles, Users, X } from "lucide-react";
+import { CalendarDays, Check, Coins, Copy, Crown, Delete, EyeOff, Gift, KeyRound, LockKeyhole, Pencil, Plus, RotateCcw, Share2, Sparkles, Users, X } from "lucide-react";
 import "@fontsource/gloock/400.css";
 import { Hills, Lights, Village } from "./Scenery";
 import "./style.css";
@@ -106,10 +106,27 @@ function PinField({ value, onChange, label = "設定 4 位數密碼", hint }) {
   </label>;
 }
 
-function EventSummary({ event, count }) {
+// 預算存的是數字（元）；舊活動可能是文字，就原樣顯示
+function formatBudget(b) {
+  if (!b) return "預算未設定";
+  return /^\d+$/.test(b) ? `預算 ${Number(b).toLocaleString("zh-TW")} 元` : `預算 ${b}`;
+}
+
+function BudgetField({ value, onChange, label = "禮物預算" }) {
+  return <label className="field">{label}
+    <span className="suffix-wrap">
+      <input value={value} inputMode="numeric" autoComplete="off" placeholder="500"
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 7))} />
+      <span className="suffix">元</span>
+    </span>
+  </label>;
+}
+
+function EventSummary({ event, count, onEditBudget }) {
   return <ul className="meta">
     <li><CalendarDays size={16} />{formatDate(event.event_date)}</li>
-    <li><Coins size={16} />{event.budget ? `預算 ${event.budget}` : "預算未設定"}</li>
+    <li><Coins size={16} />{formatBudget(event.budget)}
+      {onEditBudget && <button className="edit-btn" onClick={onEditBudget}><Pencil size={13} />修改</button>}</li>
     <li><Users size={16} />{count} 人參加</li>
   </ul>;
 }
@@ -136,7 +153,7 @@ function ConfirmDialog({ title, children, action, busy, onConfirm, onCancel }) {
 
 function Home({ go }) {
   const notify = useContext(Notify);
-  const [f, setF] = useState({ title: "2026 聖誕交換禮物", date: "2026-12-25", budget: "500–1000 元", name: "", pin: "" });
+  const [f, setF] = useState({ title: "2026 聖誕交換禮物", date: "2026-12-25", budget: "500", name: "", pin: "" });
   const [busy, setBusy] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const saved = savedEvents();
@@ -177,7 +194,7 @@ function Home({ go }) {
       <label className="field">活動名稱<input value={f.title} onChange={set("title")} maxLength={60} required /></label>
       <div className="two">
         <label className="field">交換日期<input type="date" value={f.date} onChange={set("date")} /></label>
-        <label className="field">禮物預算<input value={f.budget} onChange={set("budget")} maxLength={40} placeholder="例如 500 元" /></label>
+        <BudgetField value={f.budget} onChange={(budget) => setF({ ...f, budget })} />
       </div>
       <label className="field">你的名字<input value={f.name} onChange={set("name")} maxLength={20} placeholder="朋友認得出來的名字" /></label>
       <PinField value={f.pin} onChange={(pin) => setF({ ...f, pin })} hint="換手機或瀏覽器時，用這組密碼找回主辦人身分。請記住它。" />
@@ -327,6 +344,21 @@ function RevealCard({ assignment }) {
   </section>;
 }
 
+function BudgetDialog({ code, current, reload, onClose }) {
+  const notify = useContext(Notify);
+  const [value, setValue] = useState(/^\d+$/.test(current || "") ? current : "");
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try { await call("ss_update_budget", { p_code: code, p_budget: value }); await reload(); notify("預算已更新"); onClose(); }
+    catch (err) { notify(err.message, "error"); setBusy(false); }
+  };
+  return <ConfirmDialog title="修改預算" action="儲存" busy={busy} onConfirm={save} onCancel={onClose}>
+    <BudgetField value={value} onChange={setValue} label="每份禮物的預算" />
+    <p className="hint">留空代表不設預算。所有參加者都會看到新的預算。</p>
+  </ConfirmDialog>;
+}
+
 function MemberScreen({ code, state, reload }) {
   const notify = useContext(Notify);
   const { event, participants, me, assignment } = state;
@@ -349,7 +381,7 @@ function MemberScreen({ code, state, reload }) {
         <h1>{event.title}</h1>
         <span className={"status " + event.status}>{open ? "報名中" : "已抽籤"}</span>
       </div>
-      <EventSummary event={event} count={participants.length} />
+      <EventSummary event={event} count={participants.length} onEditBudget={me.is_host ? () => setConfirm({ kind: "budget" }) : null} />
     </section>
 
     {!open && assignment && <RevealCard assignment={assignment} />}
@@ -391,6 +423,7 @@ function MemberScreen({ code, state, reload }) {
     {!open && <p className="waiting"><LockKeyhole size={16} />抽籤結果和願望只有本人看得到，主辦人也看不到別人的。</p>}
     {!open && me.is_host && <button className="link" onClick={() => setConfirm({ kind: "reopen" })}><RotateCcw size={14} />漏了人？作廢這次結果，重新開放報名</button>}
 
+    {confirm?.kind === "budget" && <BudgetDialog code={code} current={event.budget} reload={reload} onClose={() => setConfirm(null)} />}
     {confirm?.kind === "draw" && <ConfirmDialog title={`確定要抽籤嗎？共 ${participants.length} 人`} action="確定抽籤" busy={busy}
       onCancel={() => setConfirm(null)} onConfirm={() => run("ss_draw", { p_code: code }, "抽籤完成！每個人都可以來看自己的結果了")}>
       <p>{participants.map((p) => p.name).join("、")}</p>

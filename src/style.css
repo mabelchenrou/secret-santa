@@ -83,6 +83,11 @@ input { display: block; width: 100%; min-width: 0; height: 48px; margin-top: 6px
 input:focus { border-color: var(--coral); background: #fff; box-shadow: 0 0 0 3px #e98c8f33; }
 input::placeholder { color: #ad9f9c; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.suffix-wrap { position: relative; display: block; }
+.suffix-wrap input { padding-right: 40px; }
+.suffix { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); margin-top: 3px; color: var(--muted); font-weight: 400; pointer-events: none; }
+.edit-btn { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; min-height: 30px; padding: 0 10px; border: 1.5px solid var(--line); border-radius: 16px; background: #fff; color: var(--berry); font-size: 13px; font-weight: 500; }
+.edit-btn:hover { background: var(--snow); border-color: var(--rose); }
 .pin { max-width: 190px; font-size: 20px; letter-spacing: 6px; }
 .pin::placeholder { letter-spacing: 1px; font-size: 16px; }
 .url { color: var(--muted); margin-top: 12px; }

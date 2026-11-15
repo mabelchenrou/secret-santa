@@ -83,6 +83,16 @@ begin
   return v_code;
 end $$;
 
+-- 預算只收數字（單位是元），空白代表未設定
+create or replace function public.ss_clean_budget(p_budget text)
+returns text language plpgsql immutable as $$
+declare v text := replace(replace(btrim(coalesce(p_budget, '')), ',', ''), ' ', '');
+begin
+  if v = '' then return null; end if;
+  if v !~ '^[0-9]{1,7}$' then raise exception '預算請只輸入數字，例如 500'; end if;
+  return (v::int)::text;
+end $$;
+
 -- 檢查名字與密碼，回傳整理過的名字
 create or replace function public.ss_check_person(p_name text, p_pin text)
 returns text language plpgsql immutable as $$
@@ -114,7 +124,7 @@ begin
   v_name := ss_check_person(p_name, p_pin);
   v_code := ss_new_code();
   insert into ss_events(title, event_date, budget, invite_code, host_uid)
-  values (v_title, p_event_date, nullif(left(trim(coalesce(p_budget, '')), 40), ''), v_code, v_uid)
+  values (v_title, p_event_date, ss_clean_budget(p_budget), v_code, v_uid)
   returning id into v_event_id;
   insert into ss_participants(id, event_id, user_id, name, pin_hash)
   values (v_pid, v_event_id, v_uid, v_name, ss_pin_hash(v_pid, p_pin));
@@ -253,6 +263,17 @@ begin
   if not found then raise exception '沒辦法移除這位參加者'; end if;
 end $$;
 
+-- 修改預算（只有主辦人可以，抽籤前後都能改）
+create or replace function public.ss_update_budget(p_code text, p_budget text)
+returns void language plpgsql security definer set search_path = public as $$
+declare v_event ss_events;
+begin
+  select * into v_event from ss_events where invite_code = upper(trim(p_code)) for update;
+  if not found then raise exception '找不到這個活動'; end if;
+  if auth.uid() is null or auth.uid() <> v_event.host_uid then raise exception '只有主辦人可以修改預算'; end if;
+  update ss_events set budget = ss_clean_budget(p_budget) where id = v_event.id;
+end $$;
+
 -- 換了手機或瀏覽器時，用名字加密碼找回原本的身分。
 -- 回傳 {ok: true} 或 {ok: false, error: '...'}（用回傳值而不是丟錯誤，錯誤次數才記得住）。
 create or replace function public.ss_claim(p_code text, p_participant_id uuid, p_pin text)
@@ -301,6 +322,7 @@ end $$;
 revoke all on function public.ss_pin_hash(uuid, text) from public, anon, authenticated;
 revoke all on function public.ss_new_code() from public, anon, authenticated;
 revoke all on function public.ss_check_person(text, text) from public, anon, authenticated;
+revoke all on function public.ss_clean_budget(text) from public, anon, authenticated;
 
 revoke all on function public.ss_create_event(text, date, text, text, text) from public, anon;
 revoke all on function public.ss_join(text, text, text, text) from public, anon;
@@ -310,6 +332,7 @@ revoke all on function public.ss_draw(text) from public, anon;
 revoke all on function public.ss_reopen(text) from public, anon;
 revoke all on function public.ss_remove(text, uuid) from public, anon;
 revoke all on function public.ss_claim(text, uuid, text) from public, anon;
+revoke all on function public.ss_update_budget(text, text) from public, anon;
 
 grant execute on function public.ss_create_event(text, date, text, text, text) to authenticated;
 grant execute on function public.ss_join(text, text, text, text) to authenticated;
@@ -319,6 +342,7 @@ grant execute on function public.ss_draw(text) to authenticated;
 grant execute on function public.ss_reopen(text) to authenticated;
 grant execute on function public.ss_remove(text, uuid) to authenticated;
 grant execute on function public.ss_claim(text, uuid, text) to authenticated;
+grant execute on function public.ss_update_budget(text, text) to authenticated;
 
 -- 讓 Supabase 的 API 立刻認得新的函式
 notify pgrst, 'reload schema';
