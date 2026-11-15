@@ -1,64 +1,64 @@
-# Secret Santa｜秘密交換禮物網站
+# Secret Santa｜秘密交換禮物
 
-這是一個可部署、跨裝置共用的交換禮物網站。前端使用 React + Vite，資料庫與匿名登入使用 Supabase。
+給朋友一起用的交換禮物網站。網頁放在 GitHub Pages，資料存在 Supabase。
 
-## 功能
-- 主辦人建立活動、設定日期與預算
-- 朋友透過同一個邀請網址加入，填寫姓名與注音開頭願望
-- 主辦人開始抽籤；每個人不能抽到自己
-- 每位參加者只能透過伺服器函式讀取自己的配對
-- 主辦人不能讀取完整配對表
-- 以資料庫權限保護配對資料，不依賴前端隱藏
+網址：https://mabelchenrou.github.io/secret-santa/
 
-## 一、建立 Supabase 專案
-1. 到 https://supabase.com 建立免費專案。
-2. 在 Authentication → Providers / Sign In Providers，啟用 **Anonymous Sign-Ins**（匿名登入）。
-3. 打開 SQL Editor，將 `supabase/schema.sql` 全部貼上執行。
-4. 到 Project Settings → API，複製 Project URL 與 anon/public key。
+## 怎麼玩
 
-## 二、本機測試
-需要 Node.js 20 或更新版本。
+1. 主辦人打開網站，建立活動（填活動名稱、日期、預算、自己的名字和一組 4 位數密碼）。
+2. 主辦人把邀請連結傳給朋友。
+3. 朋友點連結，填名字、注音願望和自己的 4 位數密碼。
+   願望只寫每個字的第一個注音，例如想要「香氛」就填 `ㄒㄈ`，讓送禮的人自己猜。
+4. 大家都加入後，主辦人按「開始抽籤」。
+5. 每個人回到同一個連結，點「點一下揭曉」，就會看到自己要送禮給誰，以及對方的願望。
+
+## 規則
+
+- 只有主辦人能抽籤、移除參加者、重新開放報名。
+- 抽籤結果只有本人看得到。主辦人在網站上也只看得到自己的結果。
+- 不會抽到自己，每個人剛好送一份、收一份。
+- 抽籤後名單和願望會鎖定。如果漏了人，主辦人可以作廢結果、重新開放，再抽一次。
+- 換手機或瀏覽器時，打開邀請連結，選「找回我的身分」，點自己的名字並輸入密碼。
+  密碼連續輸錯 5 次會鎖 15 分鐘。
+
+## 注意事項
+
+- 擁有 Supabase 專案的人可以在 Supabase 後台直接打開資料表看到配對。想要完全保密，就不要去看 `ss_assignments` 這張表。
+- Supabase 免費方案的專案如果大約一週沒有人使用會被暫停，到 Supabase 後台按 Resume 就能恢復，資料不會不見。
+- 邀請連結等於活動的入口，只傳給要參加的人。
+
+## 設定（只需要做一次）
+
+### Supabase
+
+1. 在 https://supabase.com 建立專案。
+2. Authentication → Sign In / Providers，開啟 **Allow anonymous sign-ins**。
+3. SQL Editor → New query，貼上 `supabase/schema.sql` 的全部內容，按 Run。
+   這份檔案可以重複執行；之後 `schema.sql` 有更新時，再貼一次執行即可，已建立的活動不會被刪除。
+
+### GitHub Pages
+
+1. Settings → Secrets and variables → Actions，新增兩個 secret：
+   - `VITE_SUPABASE_URL`：Supabase 的 Project URL（結尾不要有 `/rest/v1/`）
+   - `VITE_SUPABASE_ANON_KEY`：Supabase 的 anon public key
+2. Settings → Pages → Source 選 **GitHub Actions**。
+3. 之後每次更新 `main` 分支的檔案，`.github/workflows/deploy.yml` 會自動重新部署。
+
+## 本機開發
+
+需要 Node.js 20 以上。
 
 ```bash
 npm install
-cp .env.example .env
-```
-
-編輯 `.env`：
-```env
-VITE_SUPABASE_URL=https://你的專案.supabase.co
-VITE_SUPABASE_ANON_KEY=你的_supabase_anon_key
-```
-
-啟動：
-```bash
+# 建立 .env，內容為：
+# VITE_SUPABASE_URL=https://你的專案.supabase.co
+# VITE_SUPABASE_ANON_KEY=你的 anon key
 npm run dev
 ```
-開啟終端機顯示的網址測試。
 
-## 三、部署成公開網址（Vercel）
-1. 將此資料夾上傳到自己的 GitHub repository。
-2. 到 https://vercel.com → Add New → Project，匯入 repository。
-3. Framework 選 Vite（通常會自動偵測）。
-4. 在 Environment Variables 加入：
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-5. 按 Deploy。完成後會得到可分享的 `https://....vercel.app` 網址。
+## 檔案
 
-任何朋友都可以用同一個網址開啟。活動邀請網址會自動帶入活動代碼。
-
-## 使用流程
-1. 主辦人開啟網站，建立活動並輸入自己的名字。
-2. 複製邀請網址傳給朋友。
-3. 朋友打開網址，輸入名字與願望（例如 `ㄆ：盤子`、`ㄒ：香氛`）。
-4. 主辦人確認名單後按「開始秘密抽籤」。
-5. 每位朋友用當初加入活動的同一個瀏覽器／裝置打開邀請網址，即可看到自己的送禮對象。
-
-## 重要限制與注意事項
-- 目前採匿名登入，不需要朋友註冊，但每位參加者的身分存在該瀏覽器的 Supabase session。清除網站資料、換瀏覽器或換手機後，匿名身分不會自動轉移；請使用原本加入活動的裝置查看結果。
-- 若希望換裝置也能登入，下一版應加入 Email magic link 或一次性個人取件碼。
-- 匿名帳號可能受到 Supabase 專案的驗證／速率限制，正式活動前請先用兩個不同瀏覽器測試。
-- 目前抽籤後鎖定名單及願望，不提供重新抽籤，避免已有人看到結果後配對被改動。
-- 主辦人可以看到參加者姓名及願望，但不能透過網站查詢所有人的配對。
-- 邀請代碼相當於活動入口，請只分享給參加者。
-- 正式使用前，請先用測試活動驗證「主辦人不能看到別人的配對」及「不同瀏覽器可以加入」。
+- `src/main.jsx`：整個網頁的程式
+- `src/style.css`：樣式
+- `supabase/schema.sql`：資料表與資料庫函式（抽籤與權限檢查都在這裡）
