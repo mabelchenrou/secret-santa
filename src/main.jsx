@@ -240,7 +240,7 @@ function JoinScreen({ code, state, reload }) {
       <h2>加入活動</h2>
       <label className="field">你的名字<input value={name} onChange={(e) => setName(e.target.value)} maxLength={20} placeholder="朋友認得出來的名字" /></label>
       <div className="field">想收到的禮物
-        <span className="hint">只寫每個字的第一個注音。想要「香氛」就填 ㄒㄈ，送禮的人會自己猜。之後還可以改。</span>
+        <span className="hint">只寫每個字的第一個注音。想要「香氛」就填 ㄒㄈ，送禮的人會自己猜。其他人看不到，之後還可以改。</span>
         <WishEditor value={wish} onChange={setWish} />
       </div>
       <PinField value={pin} onChange={setPin} hint="換手機或瀏覽器時，用這組密碼找回身分、看抽籤結果。請記住它。" />
@@ -283,6 +283,7 @@ function MyWishes({ code, initial, reload }) {
   return <section className="card">
     <div className="card-head"><h2>我的願望</h2><span className="saved-mark">{saved ? value.list.length > 0 && <><Check size={14} />已儲存</> : "儲存中…"}</span></div>
     <p className="muted">只寫每個字的第一個注音。想要「香氛」就填 ㄒㄈ，送禮的人會自己猜。抽籤前都可以改。</p>
+    <p className="private"><LockKeyhole size={14} />現在只有你看得到。抽籤後，只有抽到你的人會看到。</p>
     <WishEditor value={value} onChange={change} />
   </section>;
 }
@@ -331,7 +332,7 @@ function MemberScreen({ code, state, reload }) {
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
   const host = participants.find((p) => p.is_host);
-  const noWish = participants.filter((p) => !splitWishes(p.wishes).length);
+  const noWish = participants.filter((p) => !p.has_wishes);
 
   const run = async (fn, args, okText) => {
     setBusy(true);
@@ -350,6 +351,11 @@ function MemberScreen({ code, state, reload }) {
     </section>
 
     {!open && assignment && <RevealCard assignment={assignment} />}
+    {!open && <section className="card">
+      <h2>我的願望</h2>
+      <p className="private"><LockKeyhole size={14} />只有你和抽到你的人看得到。</p>
+      <WishTags wishes={me.wishes} empty="你沒有填願望。" />
+    </section>}
     {open && <MyWishes code={code} initial={me.wishes} reload={reload} />}
     {open && <InviteCard code={code} title={event.title} />}
 
@@ -363,7 +369,7 @@ function MemberScreen({ code, state, reload }) {
               {p.is_host && <span className="badge"><Crown size={12} />主辦人</span>}
               {p.is_me && <span className="badge me">你</span>}
             </p>
-            <WishTags wishes={p.wishes} empty="還沒填願望" />
+            {p.has_wishes ? <p className="wish-status done"><Check size={14} />已填願望</p> : <p className="wish-status">還沒填願望</p>}
           </div>
           {me.is_host && open && !p.is_host && <button className="icon-btn" aria-label={`移除 ${p.name}`}
             onClick={() => setConfirm({ kind: "remove", person: p })}><X size={18} /></button>}
@@ -373,14 +379,14 @@ function MemberScreen({ code, state, reload }) {
 
     {open && (me.is_host ? <section className="card">
       <h2>抽籤</h2>
-      <p className="muted">等大家都加入、填好願望再抽。抽完後每個人只看得到自己要送給誰，你也一樣。</p>
+      <p className="muted">等大家都加入、填好願望再抽。抽完後每個人只看得到自己要送給誰和對方的願望，你也一樣。</p>
       <button className="btn primary block" disabled={participants.length < 2} onClick={() => setConfirm({ kind: "draw" })}>
         <Sparkles size={18} />開始抽籤（{participants.length} 人）
       </button>
       {participants.length < 2 && <p className="hint">至少要 2 個人才能抽籤。</p>}
     </section> : <p className="waiting"><LockKeyhole size={16} />等主辦人{host ? ` ${host.name} ` : ""}按下抽籤，這裡就會出現你要送禮的對象。</p>)}
 
-    {!open && <p className="waiting"><LockKeyhole size={16} />抽籤結果只有本人看得到，主辦人也看不到別人的。</p>}
+    {!open && <p className="waiting"><LockKeyhole size={16} />抽籤結果和願望只有本人看得到，主辦人也看不到別人的。</p>}
     {!open && me.is_host && <button className="link" onClick={() => setConfirm({ kind: "reopen" })}><RotateCcw size={14} />漏了人？作廢這次結果，重新開放報名</button>}
 
     {confirm?.kind === "draw" && <ConfirmDialog title={`確定要抽籤嗎？共 ${participants.length} 人`} action="確定抽籤" busy={busy}

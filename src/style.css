@@ -66,6 +66,8 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .saved-mark { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #2a5a3d; padding-top: 5px; }
 .waiting { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 14px; padding: 2px 6px; }
 .waiting svg { flex: none; margin-top: 3px; }
+.private { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: #2a5a3d; }
+.private svg { flex: none; }
 
 /* ── 表單 ── */
 .field { display: block; margin-top: 16px; font-size: 14px; font-weight: 500; color: #3d4f46; }
@@ -118,8 +120,8 @@ input::placeholder { color: #a3a99f; }
 .avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; background: #e3ebe2; color: var(--pine); font-family: var(--serif); font-weight: 700; font-size: 18px; display: grid; place-items: center; }
 .person-main { flex: 1; min-width: 0; }
 .person-name { font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; overflow-wrap: anywhere; }
-.person .tags { margin-top: 6px; gap: 6px; }
-.person .tag { font-size: 17px; min-height: 32px; }
+.wish-status { display: flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 14px; color: #8b948c; }
+.wish-status.done { color: #2a5a3d; }
 .badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 9px; border-radius: 20px; background: var(--sand); color: #6f5235; font-size: 12px; font-weight: 500; }
 .badge.me { background: var(--pine); color: var(--cream); }
 

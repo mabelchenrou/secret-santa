@@ -156,7 +156,9 @@ begin
 end $$;
 
 -- 讀取活動畫面需要的所有資料。
--- 還沒加入的人只看得到活動資訊與名單上的名字；配對結果永遠只回傳「自己要送給誰」。
+-- 名單只回傳名字和「有沒有填願望」，不回傳別人的願望內容（主辦人也一樣）。
+-- 願望內容只有兩個地方會出現：自己的（me），以及抽籤後自己要送禮的那個人的（assignment）。
+-- 配對結果永遠只回傳「自己要送給誰」。
 create or replace function public.ss_state(p_code text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
@@ -174,7 +176,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', p.id,
     'name', p.name,
-    'wishes', case when v_me.id is not null then p.wishes end,
+    'has_wishes', case when v_me.id is not null then btrim(p.wishes) <> '' end,
     'is_host', p.user_id = v_event.host_uid,
     'is_me', p.user_id = v_uid
   ) order by p.created_at), '[]'::jsonb)
