@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { createRoot } from "react-dom/client";
 import { createClient } from "@supabase/supabase-js";
 import { CalendarDays, Check, Coins, Copy, Crown, Delete, EyeOff, Gift, KeyRound, LockKeyhole, Plus, RotateCcw, Share2, Sparkles, Users, X } from "lucide-react";
+import "@fontsource/gloock/400.css";
+import { Hills, Lights, Village } from "./Scenery";
 import "./style.css";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -153,11 +155,11 @@ function Home({ go }) {
   };
 
   return <>
-    <section className="hero">
-      <h1>把驚喜，留給<br />最重要的人。</h1>
+    <section className="card">
+      <h2>怎麼玩</h2>
       <ol className="steps">
         <li>建立活動，把連結傳給朋友</li>
-        <li>每個人填名字和注音願望</li>
+        <li>每個人填名字和注音願望，只有自己看得到</li>
         <li>主辦人按抽籤，各自看到要送給誰</li>
       </ol>
     </section>
@@ -488,9 +490,17 @@ function App() {
   };
 
   return <Notify.Provider value={notify}>
-    <header className="topbar">
-      <button className="brand" onClick={() => go("")}><span className="brand-icon"><Gift size={18} /></span>Secret Santa<small>秘密交換禮物</small></button>
-    </header>
+    <div className={"sky" + (code ? " compact" : "")}>
+      <header className="topbar">
+        <button className="brand" onClick={() => go("")}><span className="brand-icon"><Gift size={16} /></span>Secret Santa</button>
+        <span className="topbar-note">秘密交換禮物</span>
+      </header>
+      <Lights />
+      {code ? <Hills /> : <section className="hero">
+        <p className="wordmark">Secret Santa</p>
+        <Village />
+      </section>}
+    </div>
     <main className="main">
       {!boot.ready ? <p className="loading">準備中…</p>
         : boot.error ? <section className="card"><h2>網站暫時連不上</h2><p className="muted">{boot.error}</p><button className="btn block" onClick={() => window.location.reload()}>重新整理</button></section>
